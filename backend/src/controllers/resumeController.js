@@ -1,20 +1,53 @@
 const { prisma } = require('../config/config');
+const FileProcessingService = require('../services/fileProcessingService');
 
 class ResumeController {
   // POST /api/resumes/upload
   static async uploadResume(req, res) {
     try {
-      // TODO: Implement resume upload functionality
+      const userId = req.user.id;
+      const fileInfo = req.fileInfo;
+
+      if (!fileInfo) {
+        return res.status(400).json({
+          success: false,
+          message: 'No valid file uploaded'
+        });
+      }
+
+      console.log(`Processing resume upload for user ${userId}:`, {
+        filename: fileInfo.originalName,
+        type: fileInfo.detectedType,
+        size: fileInfo.size
+      });
+
+      // Process the uploaded file
+      const processingResult = await FileProcessingService.processResumeFile(fileInfo, userId);
+
       res.status(201).json({
         success: true,
-        message: 'Resume uploaded successfully',
-        data: null
+        message: 'Resume uploaded and processed successfully',
+        data: {
+          resume: {
+            id: processingResult.resume.id,
+            filename: processingResult.resume.filename,
+            fileType: processingResult.resume.fileType,
+            status: processingResult.resume.status,
+            processingStage: processingResult.resume.processingStage,
+            processingId: processingResult.processingId,
+            uploadedAt: processingResult.resume.createdAt
+          },
+          processing: {
+            textExtracted: processingResult.textExtracted,
+            qualityAssessment: processingResult.qualityAssessment
+          }
+        }
       });
     } catch (error) {
       console.error('Resume upload error:', error);
       res.status(500).json({
         success: false,
-        message: 'Error uploading resume',
+        message: 'Error uploading and processing resume',
         error: error.message
       });
     }
@@ -220,6 +253,42 @@ class ResumeController {
       res.status(500).json({
         success: false,
         message: 'Error processing resume',
+        error: error.message
+      });
+    }
+  }
+
+  // GET /api/resumes/:id/status
+  static async getProcessingStatus(req, res) {
+    try {
+      const { id } = req.params;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Resume ID is required'
+        });
+      }
+
+      const status = await FileProcessingService.getProcessingStatus(id);
+
+      res.json({
+        success: true,
+        data: status
+      });
+    } catch (error) {
+      console.error('Error getting processing status:', error);
+      
+      if (error.message === 'Resume not found') {
+        return res.status(404).json({
+          success: false,
+          message: 'Resume not found'
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Error getting processing status',
         error: error.message
       });
     }

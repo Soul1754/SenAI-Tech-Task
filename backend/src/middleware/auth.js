@@ -31,7 +31,12 @@ const authenticate = async (req, res, next) => {
         });
       }
 
-      req.user = decoded;
+      // Set req.user with both the decoded token data and the database user data
+      req.user = {
+        ...decoded,
+        id: decoded.userId, // Add id for backward compatibility
+        ...user // Include fresh user data from database
+      };
       next();
     } catch (jwtError) {
       return res.status(401).json({
@@ -100,7 +105,11 @@ const optionalAuth = async (req, res, next) => {
       });
 
       if (user && user.isActive) {
-        req.user = decoded;
+        req.user = {
+          ...decoded,
+          id: decoded.userId, // Add id for backward compatibility
+          ...user // Include fresh user data from database
+        };
       } else {
         req.user = null;
       }

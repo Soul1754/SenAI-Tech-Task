@@ -40,17 +40,24 @@ enum UserRole {
 // Resume Management
 model Resume {
   id                String        @id @default(cuid())
+  processingId      String        @unique
   originalFileName  String
   filePath          String
   fileType          String
   fileSize          Int
+  mimeType          String?
   status            ResumeStatus  @default(PENDING)
+  processingStage   String?
   uploadedAt        DateTime      @default(now())
   processedAt       DateTime?
   
   // Content extracted from resume
   rawText           String?
+  extractedText     String?
   ocrText           String?
+  
+  // Metadata
+  metadata          Json?
   
   // Uploaded by
   uploadedBy        String
@@ -67,6 +74,9 @@ model Resume {
 enum ResumeStatus {
   PENDING
   PROCESSING
+  TEXT_EXTRACTED
+  READY_FOR_ANALYSIS
+  ANALYZED
   COMPLETED
   FAILED
   ARCHIVED
