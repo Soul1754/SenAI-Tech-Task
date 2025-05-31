@@ -32,12 +32,14 @@ A complete resume processing system with RAG, OCR, and advanced shortlisting cap
 
 1. Clone the repository
 2. Install backend dependencies:
+
    ```bash
    cd backend
    npm install
    ```
 
 3. Set up environment variables:
+
    ```bash
    cp .env.example .env
    # Edit .env with your configuration
