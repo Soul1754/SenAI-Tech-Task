@@ -19,6 +19,8 @@ model User {
   role      UserRole @default(RECRUITER)
   firstName String
   lastName  String
+  isActive  Boolean  @default(true)
+  lastLogin DateTime?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

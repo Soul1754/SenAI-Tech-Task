@@ -1,40 +1,40 @@
 const express = require('express');
 const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 // Import database configuration
 const { config, prisma } = require('./src/config/config');
 
+// Import middleware
+const { 
+  generalRateLimit, 
+  securityHeaders, 
+  errorHandler, 
+  notFound, 
+  requestLogger,
+  corsOptions 
+} = require('./src/middleware/security');
+
+// Import routes
+const apiRoutes = require('./src/routes');
+
 const app = express();
 
-// Security middleware
-app.use(helmet());
+// Security headers
+app.use(securityHeaders);
+
+// Request logging
+app.use(requestLogger);
 
 // Rate limiting
-const limiter = rateLimit({
-  windowMs: config.rateLimit.windowMs,
-  max: config.rateLimit.maxRequests,
-  message: 'Too many requests from this IP, please try again later.',
-});
-app.use(limiter);
+app.use(generalRateLimit);
 
 // CORS configuration
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    credentials: true,
-  })
-);
+app.use(cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json({ limit: config.fileUpload.maxFileSize }));
 app.use(express.urlencoded({ extended: true, limit: config.fileUpload.maxFileSize }));
-
-// Logging
-app.use(morgan('combined'));
 
 // Health check endpoint with database connectivity
 app.get('/health', async (req, res) => {
@@ -107,22 +107,14 @@ app.get('/api', async (req, res) => {
   }
 });
 
+// Mount API routes
+app.use('/api', apiRoutes);
+
 // Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    error: 'Something went wrong!',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',
-  });
-});
+app.use(errorHandler);
 
 // 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Route not found',
-    message: `Cannot ${req.method} ${req.originalUrl}`,
-  });
-});
+app.use(notFound);
 
 const PORT = config.server.port;
 
