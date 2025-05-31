@@ -1,12 +1,13 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { config } = require('../config/config');
 
 // Ensure upload directories exist
 const ensureUploadDirs = () => {
   const dirs = [
-    path.join(__dirname, '../../uploads/temp'),
-    path.join(__dirname, '../../uploads/processed')
+    path.resolve(__dirname, config.fileUpload.tempDir),
+    path.resolve(__dirname, config.fileUpload.processedDir)
   ];
   
   dirs.forEach(dir => {
@@ -22,7 +23,7 @@ ensureUploadDirs();
 // Configure multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../uploads/temp'));
+    cb(null, path.resolve(__dirname, config.fileUpload.tempDir));
   },
   filename: (req, file, cb) => {
     // Generate unique filename with timestamp and random string
@@ -34,15 +35,11 @@ const storage = multer.diskStorage({
 
 // File filter function
 const fileFilter = (req, file, cb) => {
-  // Check MIME type
+  // Check MIME type using config
   const allowedMimeTypes = [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'image/jpeg',
-    'image/png',
+    ...config.fileUpload.allowedTypes,
     'image/tiff',
-    'image/gif',
+    'image/gif', 
     'image/webp',
     'text/plain' // Allow text files for testing
   ];
@@ -59,7 +56,7 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: config.fileUpload.maxFileSize,
     files: 1 // Single file upload
   }
 });
@@ -136,7 +133,7 @@ const validateFile = async (req, res, next) => {
 
 // Cleanup function for old files
 const cleanupOldFiles = () => {
-  const tempDir = path.join(__dirname, '../../uploads/temp');
+  const tempDir = path.resolve(__dirname, config.fileUpload.tempDir);
   const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
   
   try {

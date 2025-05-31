@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { prisma } = require('../config/config');
+const { prisma, config } = require('../config/config');
 const TextExtractor = require('../utils/textExtractor');
 
 class FileProcessingService {
@@ -143,7 +143,7 @@ class FileProcessingService {
    * Move file from temp to processed directory
    */
   static async moveToProcessedDirectory(fileInfo, processingId) {
-    const processedDir = path.join(__dirname, '../../uploads/processed');
+    const processedDir = path.resolve(__dirname, config.fileUpload.processedDir);
     const fileExt = path.extname(fileInfo.filename);
     const newFileName = `${processingId}${fileExt}`;
     const newFilePath = path.join(processedDir, newFileName);

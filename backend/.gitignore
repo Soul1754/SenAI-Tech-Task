@@ -146,10 +146,15 @@ testem.log
 .DS_Store
 Thumbs.db
 
-# Upload directories
-uploads/temp/*
-uploads/processed/*
-!uploads/temp/.gitkeep
-!uploads/processed/.gitkeep
+# Upload directories (now at root level)
+../uploads/temp/*
+../uploads/processed/*
+!../uploads/temp/.gitkeep
+!../uploads/processed/.gitkeep
+
+# Temporary test files
+test-*.js
+demo-*.js
+step*.js
 
 /src/generated/prisma

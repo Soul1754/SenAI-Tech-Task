@@ -12,7 +12,7 @@ async function testEnhancedCleaning() {
   try {
     // Test with a real resume
     console.log('\n📄 Testing with real resume...');
-    const result = await TextExtractor.extractText('./uploads/Resumes/Resume 1.pdf', 'pdf');
+    const result = await TextExtractor.extractText('../uploads/Resumes/Resume 1.pdf', 'pdf');
     
     console.log(`📊 Results:`);
     console.log(`   Length: ${result.text.length} characters`);
@@ -55,7 +55,7 @@ async function testEnhancedCleaning() {
     
     // Test with another file type
     console.log('\n📄 Testing with DOCX file...');
-    const docxResult = await TextExtractor.extractText('./uploads/Resumes/Resume 10.docx', 'docx');
+    const docxResult = await TextExtractor.extractText('../uploads/Resumes/Resume 10.docx', 'docx');
     
     console.log(`📊 DOCX Results:`);
     console.log(`   Length: ${docxResult.text.length} characters`);
