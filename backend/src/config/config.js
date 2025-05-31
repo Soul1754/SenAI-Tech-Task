@@ -1,14 +1,11 @@
+const { PrismaClient } = require('../generated/prisma');
+
 const config = {
   database: {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT) || 5432,
-    database: process.env.DB_NAME || 'resume_processor',
-    username: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || '',
-    ssl: process.env.DB_SSL === 'true',
+    url: process.env.DATABASE_URL,
   },
   server: {
-    port: parseInt(process.env.PORT) || 5000,
+    port: parseInt(process.env.PORT) || 3001,
     host: process.env.HOST || 'localhost',
     nodeEnv: process.env.NODE_ENV || 'development',
   },
@@ -19,7 +16,8 @@ const config = {
   },
   fileUpload: {
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE) || 10485760, // 10MB
-    allowedTypes: (process.env.ALLOWED_FILE_TYPES || 'pdf,doc,docx,txt,png,jpg,jpeg').split(','),
+    uploadPath: process.env.UPLOAD_PATH || '../uploads',
+    allowedTypes: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'],
     uploadsDir: process.env.UPLOADS_DIR || '../uploads',
     tempDir: process.env.TEMP_DIR || '../uploads/temp',
     processedDir: process.env.PROCESSED_DIR || '../uploads/processed',
@@ -39,4 +37,9 @@ const config = {
   },
 };
 
-module.exports = config;
+// Initialize Prisma Client
+const prisma = new PrismaClient({
+  log: config.server.nodeEnv === 'development' ? ['query', 'info', 'warn', 'error'] : ['warn', 'error'],
+});
+
+module.exports = { config, prisma };

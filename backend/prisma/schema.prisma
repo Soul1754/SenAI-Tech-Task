@@ -1,0 +1,337 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  role      UserRole @default(RECRUITER)
+  firstName String
+  lastName  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  uploadedResumes Resume[]
+  shortlists      Shortlist[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  RECRUITER
+  HR_MANAGER
+}
+
+// Resume Management
+model Resume {
+  id                String        @id @default(cuid())
+  originalFileName  String
+  filePath          String
+  fileType          String
+  fileSize          Int
+  status            ResumeStatus  @default(PENDING)
+  uploadedAt        DateTime      @default(now())
+  processedAt       DateTime?
+  
+  // Content extracted from resume
+  rawText           String?
+  ocrText           String?
+  
+  // Uploaded by
+  uploadedBy        String
+  user              User          @relation(fields: [uploadedBy], references: [id])
+  
+  // Relations
+  candidate         Candidate?
+  processingLogs    ProcessingLog[]
+  shortlistEntries  ShortlistEntry[]
+
+  @@map("resumes")
+}
+
+enum ResumeStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  ARCHIVED
+}
+
+// Candidate Information
+model Candidate {
+  id               String           @id @default(cuid())
+  resumeId         String           @unique
+  resume           Resume           @relation(fields: [resumeId], references: [id])
+  
+  // Personal Information
+  firstName        String?
+  lastName         String?
+  email            String?
+  phone            String?
+  location         String?
+  linkedinUrl      String?
+  githubUrl        String?
+  portfolioUrl     String?
+  
+  // Professional Summary
+  summary          String?
+  totalExperience  Float?           // in years
+  currentRole      String?
+  currentCompany   String?
+  
+  // AI Analysis Results
+  skillsExtracted  Json?            // Array of skills with confidence scores
+  experienceLevel  ExperienceLevel?
+  industryFit      Float?           // 0-1 score
+  matchScore       Float?           // Overall match score 0-100
+  
+  // Timestamp
+  extractedAt      DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  
+  // Relations
+  workExperience   WorkExperience[]
+  education        Education[]
+  skills           CandidateSkill[]
+  certifications   Certification[]
+  shortlistEntries ShortlistEntry[]
+
+  @@map("candidates")
+}
+
+enum ExperienceLevel {
+  ENTRY_LEVEL     // 0-2 years
+  MID_LEVEL       // 3-5 years
+  SENIOR_LEVEL    // 6-10 years
+  LEAD_LEVEL      // 10+ years
+  EXECUTIVE       // C-level/VP
+}
+
+// Work Experience
+model WorkExperience {
+  id           String    @id @default(cuid())
+  candidateId  String
+  candidate    Candidate @relation(fields: [candidateId], references: [id])
+  
+  company      String
+  position     String
+  startDate    DateTime?
+  endDate      DateTime?
+  isCurrent    Boolean   @default(false)
+  description  String?
+  
+  createdAt    DateTime  @default(now())
+
+  @@map("work_experience")
+}
+
+// Education
+model Education {
+  id           String    @id @default(cuid())
+  candidateId  String
+  candidate    Candidate @relation(fields: [candidateId], references: [id])
+  
+  institution  String
+  degree       String
+  field        String?
+  startYear    Int?
+  endYear      Int?
+  gpa          Float?
+  
+  createdAt    DateTime  @default(now())
+
+  @@map("education")
+}
+
+// Skills
+model Skill {
+  id                String           @id @default(cuid())
+  name              String           @unique
+  category          SkillCategory
+  createdAt         DateTime         @default(now())
+  
+  // Relations
+  candidateSkills   CandidateSkill[]
+  jobSkills         JobSkill[]
+
+  @@map("skills")
+}
+
+model CandidateSkill {
+  id             String    @id @default(cuid())
+  candidateId    String
+  skillId        String
+  candidate      Candidate @relation(fields: [candidateId], references: [id])
+  skill          Skill     @relation(fields: [skillId], references: [id])
+  
+  proficiency    Float?    // 0-1 confidence score from AI
+  yearsExperience Float?
+  
+  @@unique([candidateId, skillId])
+  @@map("candidate_skills")
+}
+
+enum SkillCategory {
+  TECHNICAL
+  SOFT_SKILL
+  LANGUAGE
+  TOOL
+  FRAMEWORK
+  CERTIFICATION
+}
+
+// Certifications
+model Certification {
+  id            String    @id @default(cuid())
+  candidateId   String
+  candidate     Candidate @relation(fields: [candidateId], references: [id])
+  
+  name          String
+  issuer        String
+  issueDate     DateTime?
+  expiryDate    DateTime?
+  credentialId  String?
+  credentialUrl String?
+  
+  createdAt     DateTime  @default(now())
+
+  @@map("certifications")
+}
+
+// Job Definitions for Matching
+model Job {
+  id              String        @id @default(cuid())
+  title           String
+  description     String
+  requirements    String
+  department      String?
+  location        String?
+  salaryMin       Int?
+  salaryMax       Int?
+  experienceMin   Float?        // minimum years
+  experienceMax   Float?        // maximum years
+  isActive        Boolean       @default(true)
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  // Relations
+  skills          JobSkill[]
+  shortlists      Shortlist[]
+
+  @@map("jobs")
+}
+
+model JobSkill {
+  id          String      @id @default(cuid())
+  jobId       String
+  skillId     String
+  job         Job         @relation(fields: [jobId], references: [id])
+  skill       Skill       @relation(fields: [skillId], references: [id])
+  
+  importance  Importance  @default(NICE_TO_HAVE)
+  
+  @@unique([jobId, skillId])
+  @@map("job_skills")
+}
+
+enum Importance {
+  REQUIRED
+  PREFERRED
+  NICE_TO_HAVE
+}
+
+// Shortlisting System
+model Shortlist {
+  id          String           @id @default(cuid())
+  jobId       String
+  job         Job              @relation(fields: [jobId], references: [id])
+  
+  name        String
+  description String?
+  createdBy   String
+  user        User             @relation(fields: [createdBy], references: [id])
+  
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  
+  // Relations
+  entries     ShortlistEntry[]
+
+  @@map("shortlists")
+}
+
+model ShortlistEntry {
+  id           String         @id @default(cuid())
+  shortlistId  String
+  candidateId  String
+  resumeId     String
+  shortlist    Shortlist      @relation(fields: [shortlistId], references: [id])
+  candidate    Candidate      @relation(fields: [candidateId], references: [id])
+  resume       Resume         @relation(fields: [resumeId], references: [id])
+  
+  matchScore   Float          // AI-calculated match score
+  notes        String?
+  status       EntryStatus    @default(PENDING)
+  
+  addedAt      DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  
+  @@unique([shortlistId, candidateId])
+  @@map("shortlist_entries")
+}
+
+enum EntryStatus {
+  PENDING
+  REVIEWED
+  INTERVIEWED
+  REJECTED
+  HIRED
+}
+
+// Processing and Logging
+model ProcessingLog {
+  id          String           @id @default(cuid())
+  resumeId    String
+  resume      Resume           @relation(fields: [resumeId], references: [id])
+  
+  step        ProcessingStep
+  status      ProcessStatus
+  message     String?
+  errorDetails String?
+  startedAt   DateTime         @default(now())
+  completedAt DateTime?
+  
+  @@map("processing_logs")
+}
+
+enum ProcessingStep {
+  FILE_UPLOAD
+  FILE_VALIDATION
+  TEXT_EXTRACTION
+  OCR_PROCESSING
+  AI_ANALYSIS
+  SKILL_EXTRACTION
+  CANDIDATE_CREATION
+  JOB_MATCHING
+}
+
+enum ProcessStatus {
+  STARTED
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}

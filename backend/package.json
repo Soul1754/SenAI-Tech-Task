@@ -10,13 +10,20 @@
     "lint": "eslint src/**/*.js",
     "lint:fix": "eslint src/**/*.js --fix",
     "format": "prettier --write src/**/*.js",
-    "check-format": "prettier --check src/**/*.js"
+    "check-format": "prettier --check src/**/*.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "node prisma/seed.js",
+    "db:reset": "prisma migrate reset --force && npm run db:seed",
+    "db:studio": "prisma studio",
+    "db:test": "node src/utils/testDb.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@prisma/client": "^6.8.2",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
@@ -32,6 +39,7 @@
     "multer": "^2.0.0",
     "natural": "^8.1.0",
     "pdf-parse": "^1.1.1",
+    "prisma": "^6.8.2",
     "sharp": "^0.34.2",
     "tesseract.js": "^6.0.1",
     "winston": "^3.17.0"
