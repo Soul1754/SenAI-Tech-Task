@@ -1,5 +1,6 @@
 const { prisma } = require('../config/config');
 const FileProcessingService = require('../services/fileProcessingService');
+const llmService = require('../services/llmService');
 
 class ResumeController {
   // POST /api/resumes/upload
@@ -289,6 +290,89 @@ class ResumeController {
       res.status(500).json({
         success: false,
         message: 'Error getting processing status',
+        error: error.message
+      });
+    }
+  }
+
+  // POST /api/resumes/test-llm-extraction
+  static async testLLMExtraction(req, res) {
+    try {
+      const { resumeText } = req.body;
+
+      if (!resumeText || typeof resumeText !== 'string') {
+        return res.status(400).json({
+          success: false,
+          message: 'Resume text is required'
+        });
+      }
+
+      console.log('Testing LLM extraction for provided text...');
+
+      // Test LLM extraction
+      const extractionResult = await llmService.extractResumeData(resumeText);
+      
+      let summaryResult = null;
+      if (extractionResult.success) {
+        summaryResult = await llmService.generateCandidateSummary(extractionResult.data);
+      }
+
+      res.json({
+        success: true,
+        message: 'LLM extraction test completed',
+        data: {
+          extraction: {
+            success: extractionResult.success,
+            data: extractionResult.data,
+            error: extractionResult.error,
+            metadata: extractionResult.metadata,
+            usedFallback: extractionResult.usedFallback || false
+          },
+          summary: summaryResult ? {
+            success: summaryResult.success,
+            summary: summaryResult.summary,
+            fallbackSummary: summaryResult.fallbackSummary,
+            error: summaryResult.error
+          } : null
+        }
+      });
+    } catch (error) {
+      console.error('LLM extraction test error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error testing LLM extraction',
+        error: error.message
+      });
+    }
+  }
+
+  // GET /api/resumes/llm-status
+  static async getLLMStatus(req, res) {
+    try {
+      const connectionTest = await llmService.testConnection();
+      
+      res.json({
+        success: true,
+        data: {
+          ollama: {
+            connected: connectionTest.success,
+            error: connectionTest.error,
+            models: connectionTest.models || [],
+            baseUrl: llmService.config.baseUrl,
+            currentModel: llmService.config.model
+          },
+          features: {
+            structuredExtraction: true,
+            summaryGeneration: true,
+            fallbackSupport: true
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error getting LLM status:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error getting LLM status',
         error: error.message
       });
     }

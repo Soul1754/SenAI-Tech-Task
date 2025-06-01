@@ -44,4 +44,14 @@ router.delete('/:id', authenticate, ResumeController.deleteResume);
 // @access  Private
 router.post('/:id/process', authenticate, ResumeController.processResume);
 
+// @route   POST /api/resumes/test-llm-extraction
+// @desc    Test LLM extraction on provided text
+// @access  Private
+router.post('/test-llm-extraction', authenticate, ResumeController.testLLMExtraction);
+
+// @route   GET /api/resumes/llm-status
+// @desc    Get LLM service status and capabilities
+// @access  Private
+router.get('/llm-status', authenticate, ResumeController.getLLMStatus);
+
 module.exports = router;

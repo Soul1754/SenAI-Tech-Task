@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { prisma, config } = require('../config/config');
 const TextExtractor = require('../utils/textExtractor');
+const llmService = require('./llmService');
 
 class FileProcessingService {
   /**
@@ -28,20 +29,24 @@ class FileProcessingService {
       // Step 4: Move file to processed directory
       const processedFilePath = await this.moveToProcessedDirectory(fileInfo, processingId);
       
-      // Step 5: Update resume record with processing results
+      // Step 5: Extract structured data using LLM
+      const structuredData = await this.extractStructuredData(extractionResult.text, resume.id);
+      
+      // Step 6: Update resume record with processing results
       const updatedResume = await this.updateResumeWithResults(
         resume.id,
         extractionResult,
         qualityAssessment,
-        processedFilePath
+        processedFilePath,
+        structuredData
       );
       
-      // Step 6: Create processing log
+      // Step 7: Create processing log
       await this.createProcessingLog(
         resume.id, 
-        'TEXT_EXTRACTION', 
+        'COMPLETE_PROCESSING', 
         'COMPLETED', 
-        `Text extraction completed for ${processingId}. Quality: ${qualityAssessment.quality}`,
+        `Complete processing finished for ${processingId}. Quality: ${qualityAssessment.quality}`,
         null
       );
       
@@ -52,7 +57,8 @@ class FileProcessingService {
         resume: updatedResume,
         processingId,
         textExtracted: extractionResult.text.length > 0,
-        qualityAssessment
+        qualityAssessment,
+        structuredData: structuredData.success ? structuredData.data : null
       };
       
     } catch (error) {
@@ -160,27 +166,103 @@ class FileProcessingService {
   }
 
   /**
+   * Extract structured data using LLM service
+   */
+  static async extractStructuredData(extractedText, resumeId) {
+    try {
+      console.log(`Extracting structured data for resume ${resumeId}`);
+      
+      // Create processing log for LLM extraction
+      await this.createProcessingLog(
+        resumeId, 
+        'LLM_EXTRACTION', 
+        'STARTED', 
+        'Starting LLM-based structured data extraction',
+        null
+      );
+      
+      const result = await llmService.extractResumeData(extractedText);
+      
+      if (result.success) {
+        await this.createProcessingLog(
+          resumeId, 
+          'LLM_EXTRACTION', 
+          'COMPLETED', 
+          'LLM extraction completed successfully',
+          null
+        );
+        return result;
+      } else {
+        await this.createProcessingLog(
+          resumeId, 
+          'LLM_EXTRACTION', 
+          'FAILED', 
+          'LLM extraction failed, using fallback data',
+          result.error
+        );
+        return {
+          success: false,
+          data: result.fallbackData || llmService.getEmptyDataStructure(),
+          error: result.error,
+          usedFallback: true
+        };
+      }
+    } catch (error) {
+      console.error('Error extracting structured data:', error);
+      
+      await this.createProcessingLog(
+        resumeId, 
+        'LLM_EXTRACTION', 
+        'FAILED', 
+        'LLM extraction error',
+        error.message
+      );
+      
+      // Return fallback data on error
+      return {
+        success: false,
+        data: llmService.getEmptyDataStructure(),
+        error: error.message,
+        usedFallback: true
+      };
+    }
+  }
+
+  /**
    * Update resume record with processing results
    */
-  static async updateResumeWithResults(resumeId, extractionResult, qualityAssessment, processedFilePath) {
+  static async updateResumeWithResults(resumeId, extractionResult, qualityAssessment, processedFilePath, structuredData = null) {
+    const updateData = {
+      filePath: processedFilePath,
+      extractedText: extractionResult.text,
+      status: 'PROCESSED',
+      processingStage: 'COMPLETED',
+      metadata: {
+        ...await prisma.resume.findUnique({ where: { id: resumeId }, select: { metadata: true } }).then(r => r.metadata),
+        textExtraction: {
+          extractedAt: new Date().toISOString(),
+          extractionMetadata: extractionResult.metadata,
+          qualityAssessment,
+          wordCount: extractionResult.text.split(/\s+/).length,
+          characterCount: extractionResult.text.length
+        }
+      }
+    };
+
+    // Add structured data if available
+    if (structuredData && structuredData.data) {
+      updateData.metadata.llmExtraction = {
+        extractedAt: new Date().toISOString(),
+        success: structuredData.success,
+        usedFallback: structuredData.usedFallback || false,
+        error: structuredData.error || null
+      };
+      updateData.metadata.structuredData = structuredData.data;
+    }
+
     return await prisma.resume.update({
       where: { id: resumeId },
-      data: {
-        filePath: processedFilePath,
-        extractedText: extractionResult.text,
-        status: 'TEXT_EXTRACTED',
-        processingStage: 'READY_FOR_ANALYSIS',
-        metadata: {
-          ...await prisma.resume.findUnique({ where: { id: resumeId }, select: { metadata: true } }).then(r => r.metadata),
-          textExtraction: {
-            extractedAt: new Date().toISOString(),
-            extractionMetadata: extractionResult.metadata,
-            qualityAssessment,
-            wordCount: extractionResult.text.split(/\s+/).length,
-            characterCount: extractionResult.text.length
-          }
-        }
-      },
+      data: updateData,
       include: {
         user: {
           select: { id: true, email: true, firstName: true, lastName: true }

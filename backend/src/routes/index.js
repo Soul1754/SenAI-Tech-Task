@@ -9,6 +9,7 @@ const candidateRoutes = require('./candidates');
 const jobRoutes = require('./jobs');
 const skillRoutes = require('./skills');
 const shortlistRoutes = require('./shortlists');
+const llmRoutes = require('./llm');
 
 // API root
 router.get('/', (req, res) => {
@@ -25,6 +26,7 @@ router.get('/', (req, res) => {
       jobs: '/api/jobs',
       skills: '/api/skills',
       shortlists: '/api/shortlists',
+      llm: '/api/llm',
     },
   });
 });
@@ -37,5 +39,6 @@ router.use('/candidates', candidateRoutes);
 router.use('/jobs', jobRoutes);
 router.use('/skills', skillRoutes);
 router.use('/shortlists', shortlistRoutes);
+router.use('/llm', llmRoutes);
 
 module.exports = router;
