@@ -1,91 +1,95 @@
-const axios = require('axios');
+const Groq = require('groq-sdk');
 const { config } = require('../config/config');
 
 class LLMService {
   constructor() {
-    this.config = {
-      baseUrl: config.ollama.baseUrl,
-      model: config.ollama.model,
-      timeout: config.ollama.timeout
-    };
-    
-    // Create axios instance with timeout
-    this.client = axios.create({
-      baseURL: this.config.baseUrl,
-      timeout: this.config.timeout,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+    // Initialize Groq client
+    this.groq = new Groq({
+      apiKey: process.env.GROQ_API_KEY
     });
+    
+    this.config = {
+      model: 'llama3-70b-8192', // Fast and capable Llama3 70B model
+      temperature: 0.1,
+      max_tokens: 10000, // Increased to prevent truncation
+      timeout: 15000 // 15 seconds - much faster than Ollama
+    };
   }
 
   /**
-   * Test connection to Ollama
+   * Test connection to Groq
    * @returns {Promise<boolean>} - Connection status
    */
   async testConnection() {
     try {
-      const response = await this.client.get('/api/tags');
-      console.log('Ollama connection successful');
+      const response = await this.groq.chat.completions.create({
+        messages: [
+          {
+            role: "user",
+            content: "Hello, please respond with 'Connection successful'"
+          }
+        ],
+        model: this.config.model,
+        max_tokens: 10
+      });
+
+      console.log('Groq connection successful');
       return {
         success: true,
-        models: response.data.models || [],
-        message: 'Connected to Ollama successfully'
+        model: this.config.model,
+        message: 'Connected to Groq successfully',
+        response: response.choices[0]?.message?.content || 'Connected'
       };
     } catch (error) {
-      console.error('Ollama connection failed:', error.message);
+      console.error('Groq connection failed:', error.message);
       return {
         success: false,
         error: error.message,
-        message: 'Failed to connect to Ollama'
+        message: 'Failed to connect to Groq - check GROQ_API_KEY environment variable'
       };
     }
   }
 
   /**
-   * Generate completion using Ollama
+   * Generate completion using Groq
    * @param {string} prompt - The prompt to send to the model
    * @param {object} options - Additional options for the request
    * @returns {Promise<object>} - Generated response
    */
   async generateCompletion(prompt, options = {}) {
     try {
-      const requestData = {
+      console.log(`Sending request to Groq model: ${options.model || this.config.model}`);
+      
+      const response = await this.groq.chat.completions.create({
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
         model: options.model || this.config.model,
-        prompt: prompt,
-        stream: false,
-        options: {
-          temperature: options.temperature || 0.1,
-          top_p: options.top_p || 0.9,
-          max_tokens: options.max_tokens || 2000,
-          ...options.modelOptions
-        }
-      };
+        temperature: options.temperature || this.config.temperature,
+        max_tokens: options.max_tokens || this.config.max_tokens
+      });
 
-      console.log(`Sending request to Ollama model: ${requestData.model}`);
-      
-      const response = await this.client.post('/api/generate', requestData);
-      
       return {
         success: true,
-        response: response.data.response,
-        model: response.data.model,
+        response: response.choices[0]?.message?.content || '',
+        model: response.model,
         metadata: {
-          eval_count: response.data.eval_count,
-          eval_duration: response.data.eval_duration,
-          load_duration: response.data.load_duration,
-          prompt_eval_count: response.data.prompt_eval_count,
-          prompt_eval_duration: response.data.prompt_eval_duration,
-          total_duration: response.data.total_duration
+          usage: response.usage,
+          created: response.created,
+          id: response.id,
+          system_fingerprint: response.system_fingerprint
         }
       };
     } catch (error) {
-      console.error('LLM generation failed:', error.message);
+      console.error('Groq generation failed:', error.message);
       
       return {
         success: false,
         error: error.message,
-        message: 'Failed to generate LLM response'
+        message: 'Failed to generate Groq response'
       };
     }
   }
@@ -133,58 +137,41 @@ class LLMService {
    * @returns {string} - Formatted prompt
    */
   createResumeExtractionPrompt(resumeText) {
-    return `You are an expert resume parser. Extract structured information from the resume text below and respond with ONLY valid JSON. Do not include any markdown, explanations, or additional text.
+    return `Extract key information from this resume and return ONLY valid JSON:
 
-Required JSON structure:
+RESUME TEXT:
+${resumeText}
+
+Return JSON with this structure (use null for missing data):
 {
   "personal_info": {
-    "name": "string or null",
-    "email": "string or null", 
-    "phone": "string or null",
-    "address": "string or null",
-    "linkedin": "string or null",
-    "github": "string or null"
+    "name": "Full Name",
+    "email": "email@domain.com",
+    "phone": "+1-xxx-xxx-xxxx",
+    "address": "City, State",
+    "linkedin": "linkedin.com/in/username"
   },
-  "summary": "string or null",
+  "summary": "Brief professional summary",
   "skills": ["skill1", "skill2"],
   "experience": [
     {
-      "company": "string",
-      "position": "string", 
-      "start_date": "string",
-      "end_date": "string",
-      "description": "string",
-      "technologies": ["tech1", "tech2"]
+      "company": "Company Name",
+      "position": "Job Title",
+      "start_date": "Month Year",
+      "end_date": "Month Year",
+      "description": "Brief description"
     }
   ],
   "education": [
     {
-      "institution": "string",
-      "degree": "string",
-      "field": "string", 
-      "graduation_date": "string",
-      "gpa": "string or null"
+      "institution": "University",
+      "degree": "Degree",
+      "field": "Field",
+      "graduation_date": "Year"
     }
   ],
-  "certifications": ["cert1", "cert2"],
-  "projects": [
-    {
-      "name": "string",
-      "description": "string",
-      "technologies": ["tech1", "tech2"],
-      "url": "string or null"
-    }
-  ],
-  "languages": [
-    {
-      "language": "string",
-      "proficiency": "string"
-    }
-  ]
+  "certifications": ["cert1", "cert2"]
 }
-
-Resume Text:
-${resumeText}
 
 JSON:`;
   }
@@ -200,7 +187,7 @@ JSON:`;
       let cleanedResponse = response.trim();
       
       // Remove any markdown code blocks if present
-      cleanedResponse = cleanedResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+      cleanedResponse = cleanedResponse.replace(/```json\s*/gi, '').replace(/```\s*/gi, '');
       
       // Remove any text before the first { and after the last }
       const jsonStart = cleanedResponse.indexOf('{');
@@ -210,42 +197,134 @@ JSON:`;
         cleanedResponse = cleanedResponse.substring(jsonStart, jsonEnd);
       }
       
-      // Remove any invalid characters or malformed sections
-      // Try to find the largest valid JSON object
-      let parsed = null;
-      let bestJSON = '';
+      // Enhanced JSON cleaning for LLM responses
+      cleanedResponse = cleanedResponse
+        // Remove trailing commas before closing braces/brackets
+        .replace(/,(\s*[}\]])/g, '$1')
+        // Fix incomplete trailing objects/arrays
+        .replace(/,\s*$/, '')
+        // Handle truncated responses - close incomplete arrays/objects
+        .replace(/,\s*"[^"]*$/, '')  // Remove incomplete trailing properties
+        .replace(/:\s*"[^"]*$/, ': null')  // Replace incomplete values with null
+        .replace(/:\s*\[([^\]]*[^,\]])?\s*$/, ': []');  // Close incomplete arrays
       
-      // Try parsing progressively smaller portions if needed
-      for (let endIdx = cleanedResponse.length; endIdx > 0; endIdx -= 10) {
-        try {
-          const testJSON = cleanedResponse.substring(0, endIdx);
-          if (testJSON.endsWith('}')) {
-            parsed = JSON.parse(testJSON);
-            bestJSON = testJSON;
-            break;
-          }
-        } catch (e) {
-          continue;
-        }
-      }
-      
-      if (!parsed) {
-        // Fallback: try to fix common JSON issues
-        cleanedResponse = cleanedResponse
-          .replace(/,\s*}/g, '}')  // Remove trailing commas
-          .replace(/,\s*]/g, ']')  // Remove trailing commas in arrays
-          .replace(/([^"]),\s*([^"])/g, '$1,$2'); // Fix spacing
-        
+      // Try to parse the cleaned JSON
+      let parsed;
+      try {
         parsed = JSON.parse(cleanedResponse);
+      } catch (parseError) {
+        console.log('Initial JSON parse failed, attempting to fix truncated response...');
+        console.log('Parse error:', parseError.message);
+        console.log('Cleaned response length:', cleanedResponse.length);
+        
+        // More aggressive approach: find the last complete structure
+        let depth = 0;
+        let lastValidIndex = -1;
+        let inString = false;
+        let escapeNext = false;
+        
+        for (let i = 0; i < cleanedResponse.length; i++) {
+          const char = cleanedResponse[i];
+          
+          if (escapeNext) {
+            escapeNext = false;
+            continue;
+          }
+          
+          if (char === '\\') {
+            escapeNext = true;
+            continue;
+          }
+          
+          if (char === '"' && !escapeNext) {
+            inString = !inString;
+            continue;
+          }
+          
+          if (!inString) {
+            if (char === '{' || char === '[') {
+              depth++;
+            } else if (char === '}' || char === ']') {
+              depth--;
+              if (depth === 0) {
+                lastValidIndex = i + 1;
+              }
+            }
+          }
+        }
+        
+        if (lastValidIndex > 0) {
+          const truncatedJson = cleanedResponse.substring(0, lastValidIndex);
+          console.log('Attempting to parse truncated JSON of length:', truncatedJson.length);
+          parsed = JSON.parse(truncatedJson);
+        } else {
+          // Last resort: try to extract data manually using regex
+          console.log('Attempting manual data extraction...');
+          return this.extractDataManually(response);
+        }
       }
       
       // Validate and normalize the structure
       return this.normalizeExtractedData(parsed);
+      
     } catch (error) {
       console.error('Failed to parse LLM response as JSON:', error.message);
-      console.log('Cleaned response:', cleanedResponse?.substring(0, 500) + '...');
+      console.log('Original response preview:', response.substring(0, 500) + '...');
       
-      // Return basic structure if parsing fails
+      // Try manual extraction as final fallback
+      return this.extractDataManually(response);
+    }
+  }
+
+  /**
+   * Manual data extraction using regex patterns as last resort
+   * @param {string} response - Raw LLM response
+   * @returns {object} - Extracted data
+   */
+  extractDataManually(response) {
+    console.log('Using manual regex extraction...');
+    
+    try {
+      const data = this.getEmptyDataStructure();
+      
+      // Extract personal info using regex
+      const nameMatch = response.match(/"name":\s*"([^"]+)"/);
+      const emailMatch = response.match(/"email":\s*"([^"]+)"/);
+      const phoneMatch = response.match(/"phone":\s*"([^"]+)"/);
+      const addressMatch = response.match(/"address":\s*"([^"]+)"/);
+      const linkedinMatch = response.match(/"linkedin":\s*"([^"]+)"/);
+      
+      if (nameMatch) data.personal_info.name = nameMatch[1];
+      if (emailMatch) data.personal_info.email = emailMatch[1];
+      if (phoneMatch) data.personal_info.phone = phoneMatch[1];
+      if (addressMatch) data.personal_info.address = addressMatch[1];
+      if (linkedinMatch) data.personal_info.linkedin = linkedinMatch[1];
+      
+      // Extract summary
+      const summaryMatch = response.match(/"summary":\s*"([^"]+)"/);
+      if (summaryMatch) data.summary = summaryMatch[1];
+      
+      // Extract skills array
+      const skillsMatch = response.match(/"skills":\s*\[(.*?)\]/s);
+      if (skillsMatch) {
+        const skillsStr = skillsMatch[1];
+        const skills = skillsStr.match(/"([^"]+)"/g);
+        if (skills) {
+          data.skills = skills.map(skill => skill.replace(/"/g, ''));
+        }
+      }
+      
+      console.log('Manual extraction completed:', {
+        name: data.personal_info.name,
+        email: data.personal_info.email,
+        phone: data.personal_info.phone,
+        skillsCount: data.skills.length
+      });
+      
+      return data;
+      
+    } catch (error) {
+      console.error('Manual extraction failed:', error.message);
       return this.getEmptyDataStructure();
     }
   }

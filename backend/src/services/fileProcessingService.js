@@ -3,6 +3,7 @@ const path = require('path');
 const { prisma, config } = require('../config/config');
 const TextExtractor = require('../utils/textExtractor');
 const llmService = require('./llmService');
+const { CandidateService } = require('./candidateService');
 
 class FileProcessingService {
   /**
@@ -29,8 +30,8 @@ class FileProcessingService {
       // Step 4: Move file to processed directory
       const processedFilePath = await this.moveToProcessedDirectory(fileInfo, processingId);
       
-      // Step 5: Extract structured data using LLM
-      const structuredData = await this.extractStructuredData(extractionResult.text, resume.id);
+      // Step 5: Create candidate from resume using LLM
+      const candidateResult = await this.createCandidateFromResume(extractionResult.text, resume.id);
       
       // Step 6: Update resume record with processing results
       const updatedResume = await this.updateResumeWithResults(
@@ -38,15 +39,15 @@ class FileProcessingService {
         extractionResult,
         qualityAssessment,
         processedFilePath,
-        structuredData
+        candidateResult
       );
       
       // Step 7: Create processing log
       await this.createProcessingLog(
         resume.id, 
-        'COMPLETE_PROCESSING', 
+        'AI_ANALYSIS', 
         'COMPLETED', 
-        `Complete processing finished for ${processingId}. Quality: ${qualityAssessment.quality}`,
+        `Processing completed for ${processingId}. Quality: ${qualityAssessment.quality}`,
         null
       );
       
@@ -55,10 +56,11 @@ class FileProcessingService {
       return {
         success: true,
         resume: updatedResume,
+        candidate: candidateResult.success ? candidateResult.candidate : null,
         processingId,
         textExtracted: extractionResult.text.length > 0,
         qualityAssessment,
-        structuredData: structuredData.success ? structuredData.data : null
+        candidateCreated: candidateResult.success
       };
       
     } catch (error) {
@@ -166,64 +168,62 @@ class FileProcessingService {
   }
 
   /**
-   * Extract structured data using LLM service
+   * Create candidate from resume using LLM service
    */
-  static async extractStructuredData(extractedText, resumeId) {
+  static async createCandidateFromResume(extractedText, resumeId) {
     try {
-      console.log(`Extracting structured data for resume ${resumeId}`);
+      console.log(`Creating candidate for resume ${resumeId}`);
       
-      // Create processing log for LLM extraction
+      // Create processing log for candidate creation
       await this.createProcessingLog(
         resumeId, 
-        'LLM_EXTRACTION', 
+        'CANDIDATE_CREATION', 
         'STARTED', 
-        'Starting LLM-based structured data extraction',
+        'Starting candidate creation from resume data',
         null
       );
       
-      const result = await llmService.extractResumeData(extractedText);
+      const candidateService = new CandidateService();
+      const result = await candidateService.createCandidateFromResume(resumeId, extractedText);
       
       if (result.success) {
         await this.createProcessingLog(
           resumeId, 
-          'LLM_EXTRACTION', 
+          'CANDIDATE_CREATION', 
           'COMPLETED', 
-          'LLM extraction completed successfully',
+          `Candidate created successfully: ${result.candidate.fullName}`,
           null
         );
         return result;
       } else {
         await this.createProcessingLog(
           resumeId, 
-          'LLM_EXTRACTION', 
+          'CANDIDATE_CREATION', 
           'FAILED', 
-          'LLM extraction failed, using fallback data',
+          'Candidate creation failed',
           result.error
         );
         return {
           success: false,
-          data: result.fallbackData || llmService.getEmptyDataStructure(),
-          error: result.error,
-          usedFallback: true
+          candidate: null,
+          error: result.error
         };
       }
     } catch (error) {
-      console.error('Error extracting structured data:', error);
+      console.error('Error creating candidate:', error);
       
       await this.createProcessingLog(
         resumeId, 
-        'LLM_EXTRACTION', 
+        'CANDIDATE_CREATION', 
         'FAILED', 
-        'LLM extraction error',
+        'Candidate creation error',
         error.message
       );
       
-      // Return fallback data on error
       return {
         success: false,
-        data: llmService.getEmptyDataStructure(),
-        error: error.message,
-        usedFallback: true
+        candidate: null,
+        error: error.message
       };
     }
   }
@@ -231,12 +231,13 @@ class FileProcessingService {
   /**
    * Update resume record with processing results
    */
-  static async updateResumeWithResults(resumeId, extractionResult, qualityAssessment, processedFilePath, structuredData = null) {
+  static async updateResumeWithResults(resumeId, extractionResult, qualityAssessment, processedFilePath, candidateResult = null) {
     const updateData = {
       filePath: processedFilePath,
       extractedText: extractionResult.text,
-      status: 'PROCESSED',
-      processingStage: 'COMPLETED',
+      status: candidateResult?.success ? 'COMPLETED' : 'ANALYZED',
+      processingStage: candidateResult?.success ? 'CANDIDATE_CREATED' : 'TEXT_EXTRACTED',
+      processedAt: new Date(),
       metadata: {
         ...await prisma.resume.findUnique({ where: { id: resumeId }, select: { metadata: true } }).then(r => r.metadata),
         textExtraction: {
@@ -249,15 +250,14 @@ class FileProcessingService {
       }
     };
 
-    // Add structured data if available
-    if (structuredData && structuredData.data) {
-      updateData.metadata.llmExtraction = {
-        extractedAt: new Date().toISOString(),
-        success: structuredData.success,
-        usedFallback: structuredData.usedFallback || false,
-        error: structuredData.error || null
+    // Add candidate creation metadata if available
+    if (candidateResult) {
+      updateData.metadata.candidateCreation = {
+        createdAt: new Date().toISOString(),
+        success: candidateResult.success,
+        candidateId: candidateResult.success ? candidateResult.candidate.id : null,
+        error: candidateResult.error || null
       };
-      updateData.metadata.structuredData = structuredData.data;
     }
 
     return await prisma.resume.update({
@@ -266,7 +266,19 @@ class FileProcessingService {
       include: {
         user: {
           select: { id: true, email: true, firstName: true, lastName: true }
-        }
+        },
+        candidate: candidateResult?.success ? {
+          include: {
+            skills: {
+              include: {
+                skill: true
+              }
+            },
+            workExperience: true,
+            education: true,
+            certifications: true
+          }
+        } : false
       }
     });
   }

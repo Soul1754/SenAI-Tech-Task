@@ -56,6 +56,9 @@ model Resume {
   extractedText     String?
   ocrText           String?
   
+  // Structured data extracted by LLM
+  structuredData    Json?
+  
   // Metadata
   metadata          Json?
   
@@ -82,46 +85,39 @@ enum ResumeStatus {
   ARCHIVED
 }
 
-// Candidate Information
+// Candidate Information (Simplified)
 model Candidate {
-  id               String           @id @default(cuid())
-  resumeId         String           @unique
-  resume           Resume           @relation(fields: [resumeId], references: [id])
-  
-  // Personal Information
-  firstName        String?
-  lastName         String?
-  email            String?
-  phone            String?
-  location         String?
-  linkedinUrl      String?
-  githubUrl        String?
-  portfolioUrl     String?
-  
-  // Professional Summary
-  summary          String?
-  totalExperience  Float?           // in years
-  currentRole      String?
-  currentCompany   String?
-  
-  // AI Analysis Results
-  skillsExtracted  Json?            // Array of skills with confidence scores
-  experienceLevel  ExperienceLevel?
-  industryFit      Float?           // 0-1 score
-  matchScore       Float?           // Overall match score 0-100
-  
-  // Timestamp
-  extractedAt      DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  id              String          @id @default(cuid())
+  resumeId        String          @unique
+  resume          Resume          @relation(fields: [resumeId], references: [id])
+  fullName        String
+  email           String?
+  phone           String?
+  location        String?
+  yearsExperience Int             @default(0)
+  status          CandidateStatus @default(PENDING)
+  summary         String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
   
   // Relations
-  workExperience   WorkExperience[]
-  education        Education[]
-  skills           CandidateSkill[]
-  certifications   Certification[]
+  education       Education[]
+  skills          CandidateSkill[]
+  workExperience  WorkExperience[]
+  certifications  Certification[]
   shortlistEntries ShortlistEntry[]
 
   @@map("candidates")
+}
+
+enum CandidateStatus {
+  PENDING
+  PROCESSING
+  ACTIVE
+  INTERVIEWED
+  HIRED
+  REJECTED
+  ARCHIVED
 }
 
 enum ExperienceLevel {

@@ -319,7 +319,7 @@ class TextExtractor {
         }
       );
 
-      console.log(`OCR completed with confidence: ${confidence}%`);
+      //console.log(`OCR completed with confidence: ${confidence}%`);
       return {
         text: this.cleanText(text),
         confidence: confidence
@@ -396,7 +396,6 @@ class TextExtractor {
             allText += text.trim();
             totalConfidence += confidence;
             processedPages++;
-            console.log(`Page ${pageIndex} OCR completed with ${confidence.toFixed(1)}% confidence`);
           }
 
           // Clean up processed image
@@ -477,7 +476,6 @@ class TextExtractor {
         };
       }
 
-      console.log(`Found ${extractedImages.length} images in DOCX, processing with OCR...`);
       
       let allText = '';
       let totalConfidence = 0;
@@ -487,7 +485,6 @@ class TextExtractor {
       for (let i = 0; i < extractedImages.length; i++) {
         try {
           const imagePath = extractedImages[i];
-          console.log(`Processing image ${i + 1}/${extractedImages.length}: ${path.basename(imagePath)}`);
           
           // Preprocess image for better OCR
           const processedImagePath = await this.preprocessImageForOCR(imagePath);
@@ -505,7 +502,6 @@ class TextExtractor {
             allText += text.trim();
             totalConfidence += confidence;
             processedImages++;
-            console.log(`Image ${i + 1} OCR completed with ${confidence.toFixed(1)}% confidence`);
           }
 
           // Clean up processed image
@@ -538,7 +534,6 @@ class TextExtractor {
       }
 
       const averageConfidence = processedImages > 0 ? totalConfidence / processedImages : 0;
-      console.log(`DOCX OCR completed. Processed ${processedImages} images with average confidence: ${averageConfidence.toFixed(1)}%`);
 
       if (allText.trim().length === 0) {
         return {
@@ -608,7 +603,7 @@ class TextExtractor {
           if (entry.fileName.startsWith('word/media/') && 
               /\.(png|jpg|jpeg|gif|bmp)$/i.test(entry.fileName)) {
             
-            console.log(`Found image: ${entry.fileName}`);
+            
             
             zipfile.openReadStream(entry, (err, readStream) => {
               if (err) {

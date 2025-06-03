@@ -1,0 +1,294 @@
+[
+  {
+    "filename": "Resume 1.pdf",
+    "success": true,
+    "processingTime": 1.81,
+    "textLength": 1912,
+    "wordCount": 256,
+    "extractedData": {
+      "personal_info": {
+        "name": "Sarah Chen",
+        "email": "sarah.chen@email.com",
+        "phone": "+1-555-0123",
+        "address": "San Francisco, CA",
+        "linkedin": "linkedin.com/in/sarahchen",
+        "github": null
+      },
+      "summary": "Senior Software Engineer with 6+ years of experience in full-stack development, specializing in scalable web applications and cloud architecture.",
+      "skills": [
+        "Python",
+        "JavaScript",
+        "Java",
+        "TypeScript",
+        "Go",
+        "React",
+        "Node.js",
+        "Django",
+        "Spring Boot",
+        "Express.js",
+        "PostgreSQL",
+        "MongoDB",
+        "Redis",
+        "MySQL",
+        "AWS",
+        "Google Cloud Platform",
+        "Docker",
+        "Kubernetes",
+        "Git",
+        "Jenkins",
+        "Terraform",
+        "Grafana",
+        "Elasticsearch"
+      ],
+      "experience": [
+        {
+          "company": "TechCorp Inc.",
+          "position": "Senior Software Engineer",
+          "start_date": "Jan 2021",
+          "end_date": "Present",
+          "description": "Led development of microservices architecture serving 2M+ daily active users. Implemented CI/CD pipelines reducing deployment time by 75%. Mentored 4 junior developers and conducted technical interviews.",
+          "technologies": []
+        },
+        {
+          "company": "StartupXYZ",
+          "position": "Software Engineer",
+          "start_date": "Jun 2018",
+          "end_date": "Dec 2020",
+          "description": "Built real-time analytics dashboard processing 100K+ events per second. Optimized database queries improving application performance by 40%. Collaborated with product team to define technical requirements.",
+          "technologies": []
+        },
+        {
+          "company": "DataSolutions Ltd.",
+          "position": "Junior Software Engineer",
+          "start_date": "Aug 2017",
+          "end_date": "May 2018",
+          "description": "Developed REST APIs for customer management system. Fixed critical bugs and implemented new features. Participated in agile development processes.",
+          "technologies": []
+        }
+      ],
+      "education": [
+        {
+          "institution": "Stanford University",
+          "degree": "Master of Science",
+          "field": "Computer Science",
+          "graduation_date": "2017",
+          "gpa": null
+        },
+        {
+          "institution": "UC Berkeley",
+          "degree": "Bachelor of Science",
+          "field": "Software Engineering",
+          "graduation_date": "2015",
+          "gpa": null
+        }
+      ],
+      "certifications": [
+        "AWS Certified Solutions Architect - Professional",
+        "Google Cloud Professional Developer"
+      ],
+      "projects": [],
+      "languages": []
+    },
+    "metadata": {
+      "usage": {
+        "queue_time": 0.049980498,
+        "prompt_tokens": 653,
+        "prompt_time": 0.020537702,
+        "completion_tokens": 591,
+        "completion_time": 1.688571429,
+        "total_tokens": 1244,
+        "total_time": 1.709109131
+      },
+      "created": 1748942346,
+      "id": "chatcmpl-de916bf0-3a08-4ba6-84fb-c08b58d0c797",
+      "system_fingerprint": "fp_dd4ae1c591"
+    }
+  },
+  {
+    "filename": "Resume 2.docx",
+    "success": true,
+    "processingTime": 1.77,
+    "textLength": 2180,
+    "wordCount": 307,
+    "extractedData": {
+      "personal_info": {
+        "name": "Marcus Rodriguez",
+        "email": "marcus.rodriguez@gmail.com",
+        "phone": "+1-555-789-0456",
+        "address": "Austin, Texas",
+        "linkedin": null,
+        "github": null
+      },
+      "summary": "Data Scientist with 4 years of experience in machine learning, statistical analysis, and big data processing.",
+      "skills": [
+        "Machine Learning",
+        "Python",
+        "R",
+        "SQL",
+        "Scala",
+        "MATLAB",
+        "Data Visualization",
+        "Big Data",
+        "Statistics",
+        "Cloud"
+      ],
+      "experience": [
+        {
+          "company": "RetailTech Solutions",
+          "position": "Data Scientist",
+          "start_date": "March 2020",
+          "end_date": "Present",
+          "description": "Developed recommendation systems increasing customer engagement by 35%. Built predictive models for inventory optimization saving $2M annually. Created automated data pipelines processing 10TB+ daily data. Presented insights to C-level executives and stakeholder teams.",
+          "technologies": []
+        },
+        {
+          "company": "Financial Analytics Corp",
+          "position": "Junior Data Analyst",
+          "start_date": "July 2019",
+          "end_date": "February 2020",
+          "description": "Analyzed customer behavior patterns using statistical methods. Created interactive dashboards for business intelligence reporting. Performed A/B testing for marketing campaigns optimization. Collaborated with engineering teams on data infrastructure.",
+          "technologies": []
+        },
+        {
+          "company": "HealthTech Startup",
+          "position": "Data Science Intern",
+          "start_date": "Summer 2019",
+          "end_date": null,
+          "description": "Implemented NLP models for medical text classification. Conducted exploratory data analysis on patient health records. Assisted in research paper publication on healthcare analytics.",
+          "technologies": []
+        }
+      ],
+      "education": [
+        {
+          "institution": "University of Texas at Austin",
+          "degree": "M.S.",
+          "field": "Data Science",
+          "graduation_date": "May 2019",
+          "gpa": null
+        },
+        {
+          "institution": "Rice University",
+          "degree": "B.S.",
+          "field": "Mathematics with Statistics Minor",
+          "graduation_date": "May 2017",
+          "gpa": null
+        }
+      ],
+      "certifications": [],
+      "projects": [],
+      "languages": []
+    },
+    "metadata": {
+      "usage": {
+        "queue_time": 0.050195866,
+        "prompt_tokens": 709,
+        "prompt_time": 0.030660974,
+        "completion_tokens": 530,
+        "completion_time": 1.5142857140000001,
+        "total_tokens": 1239,
+        "total_time": 1.544946688
+      },
+      "created": 1748942363,
+      "id": "chatcmpl-4a5f7036-0e24-44d5-bf7e-cd6704bba26e",
+      "system_fingerprint": "fp_dd4ae1c591"
+    }
+  },
+  {
+    "filename": "Resume 3.docx",
+    "success": true,
+    "processingTime": 1.953,
+    "textLength": 2090,
+    "wordCount": 296,
+    "extractedData": {
+      "personal_info": {
+        "name": "Jennifer Kim",
+        "email": "jennifer.kim@outlook.com",
+        "phone": "+1.555.234.7890",
+        "address": "Seattle, WA 98101",
+        "linkedin": null,
+        "github": null
+      },
+      "summary": "Strategic Product Manager with 8+ years driving product vision and execution for B2B SaaS platforms.",
+      "skills": [
+        "Product Strategy & Roadmapping",
+        "User Experience Design",
+        "Agile/Scrum",
+        "Data Analysis & Metrics",
+        "A/B Testing",
+        "Market Research",
+        "Stakeholder Management",
+        "Jira",
+        "Confluence",
+        "Figma",
+        "Amplitude",
+        "Mixpanel",
+        "SQL",
+        "Tableau"
+      ],
+      "experience": [
+        {
+          "company": "CloudScale Technologies",
+          "position": "Senior Product Manager",
+          "start_date": "Jan 2019",
+          "end_date": "Current",
+          "description": "Led product strategy for enterprise analytics platform ($50M ARR), Increased user engagement by 60% through data-driven feature prioritization, managed product backlog for 3 teams (25+ developers), collaborated with sales team resulting in 40% increase in enterprise deals, launched mobile application achieving 4.8 App Store rating",
+          "technologies": []
+        },
+        {
+          "company": "DevTools Inc.",
+          "position": "Product Manager",
+          "start_date": "Mar 2016",
+          "end_date": "Dec 2018",
+          "description": "Owned developer platform serving 100K+ monthly active developers, conducted 200+ user interviews informing product roadmap decisions, reduced customer churn by 25% through improved onboarding experience, worked closely with UX designers on user journey optimization",
+          "technologies": []
+        },
+        {
+          "company": "TechStartup Co.",
+          "position": "Associate Product Manager",
+          "start_date": "Jun 2014",
+          "end_date": "Feb 2016",
+          "description": "Supported product launches for fintech mobile application, analyzed user behavior data to identify growth opportunities, coordinated with marketing team on go-to-market strategies, assisted in raising Series A funding through product demos",
+          "technologies": []
+        }
+      ],
+      "education": [
+        {
+          "institution": "University of Washington",
+          "degree": "MBA",
+          "field": "Technology Management",
+          "graduation_date": "2014",
+          "gpa": null
+        },
+        {
+          "institution": "University of California, Los Angeles",
+          "degree": "BS",
+          "field": "Business Administration",
+          "graduation_date": "2012",
+          "gpa": null
+        }
+      ],
+      "certifications": [
+        "Product of the Year Award - CloudScale Technologies (2021)",
+        "Speaker at ProductCon Seattle (2020, 2022)",
+        "Certified Scrum Product Owner (CSPO)",
+        "Google Analytics Individual Qualification"
+      ],
+      "projects": [],
+      "languages": []
+    },
+    "metadata": {
+      "usage": {
+        "queue_time": 0.050301415,
+        "prompt_tokens": 701,
+        "prompt_time": 0.022227364,
+        "completion_tokens": 611,
+        "completion_time": 1.7457142860000001,
+        "total_tokens": 1312,
+        "total_time": 1.76794165
+      },
+      "created": 1748942370,
+      "id": "chatcmpl-42900068-b93e-479e-8ca6-6ca800b5f669",
+      "system_fingerprint": "fp_dd4ae1c591"
+    }
+  }
+]
